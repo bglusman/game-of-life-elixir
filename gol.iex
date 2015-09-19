@@ -1,24 +1,22 @@
 defmodule GameOfLife do
 
   def iterate(living_cells) do
-    neighbor_cells = Enum.flat_map(living_cells, &neighbor_cells_for/1 )
-    neighbor_pairs = Enum.map(neighbor_cells, fn(c) -> {c, 1} end)
+    neighbor_pairs = Enum.flat_map(living_cells, &neighbor_cells_for/1 )
+    |>  Enum.map(fn(c) -> {c, 1} end)
     live_pairs =  Enum.map(living_cells, fn(c) -> {c, 0.5} end)
     all_pairs = live_pairs ++ neighbor_pairs
-    all_points = Enum.uniq(Enum.map(all_pairs, fn(p) -> elem(p,0) end))
+    filtered_totals = Enum.map(all_pairs, &pair_to_point/1)
+                 |> Enum.uniq
+                 |> Enum.map(fn(point) ->
+                      value = Enum.filter(all_pairs, fn(pair) -> elem(pair, 0) == point end)
+                              |> Enum.reduce(0, fn(p, accum) -> elem(p,1) + accum  end)
+                      {point, value}
+                    end)
+                 |> Enum.filter(fn(pair) ->
+                      (elem(pair, 1) > 2) && (elem(pair, 1) <= 4)
+                    end)
 
-    totals = Enum.map(all_points, fn(point) ->
-      points_to_sum = Enum.filter(all_pairs, fn(pair) ->
-        elem(pair, 0) == point
-      end)
-      value = Enum.reduce(points_to_sum, 0, fn(p, accum) -> elem(p,1) + accum  end)
-      {point, value}
-    end)
-    filtered_totals = Enum.filter(totals, fn(pair) ->
-      (elem(pair, 1) > 2) && (elem(pair, 1) <= 4)
-    end)
-
-    Enum.map(filtered_totals, fn(p) -> elem(p,0) end)
+    Enum.map(filtered_totals, &pair_to_point/1)
   end
 
   def neighbor_cells_for(v) do
@@ -31,5 +29,9 @@ defmodule GameOfLife do
         {elem(v,0) + 1,elem(v,1)    },
         {elem(v,0) + 1,elem(v,1) + 1}
       ]
+  end
+
+  def pair_to_point(p) do
+    elem(p,0)
   end
 end
